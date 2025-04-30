@@ -2,7 +2,7 @@ import streamlit as st
 import tiktoken
 
 # Settings
-MAX_TOKENS = 28000
+MAX_TOKENS = 27000
 MODEL_NAME = "gpt-4"
 
 # Initialize tokenizer
@@ -31,8 +31,8 @@ def split_text_by_tokens(text, max_tokens=MAX_TOKENS):
     return chunks
 
 # UI
-st.title("📚 ChatGPT Text Chunker (100K Token Chunks)")
-st.markdown("Split large text files into GPT-4o-ready chunks based on token count (100,000 tokens per chunk).")
+st.title("📚 ChatGPT Text Chunker (27K Token Chunks)")
+st.markdown("Split large text into ChatGPT-friendly chunks with a token limit of 27,000. Each chunk includes the instruction: `just answer ok:`")
 
 text_input = st.text_area("Paste your full text here", height=300)
 uploaded_file = st.file_uploader("Or upload a .txt file", type=["txt"])
@@ -52,8 +52,12 @@ if text_input:
     st.markdown(f"**Average tokens per chunk:** {int(avg_tokens):,}")
     st.markdown("---")
 
-    for i, (chunk, token_count) in enumerate(chunks):
-        st.text_area(f"Chunk {i+1} — {token_count} tokens", value=chunk, height=250)
+    formatted_chunks = []
 
-    full_text = "\n\n---\n\n".join(chunk for chunk, _ in chunks)
+    for i, (chunk, token_count) in enumerate(chunks):
+        formatted = f"just answer ok:\n{chunk}"
+        formatted_chunks.append(formatted)
+        st.text_area(f"Chunk {i+1} — {token_count} tokens", value=formatted, height=250)
+
+    full_text = "\n\n---\n\n".join(formatted_chunks)
     st.download_button("📥 Download All Chunks", full_text, file_name="gpt_chunks.txt")
