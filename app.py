@@ -1,9 +1,12 @@
 import streamlit as st
 import tiktoken
 
-# Set near-maximum token limit for GPT-4o
-MAX_TOKENS = 127000
-enc = tiktoken.encoding_for_model("gpt-4")
+# Settings
+MAX_TOKENS = 100000
+MODEL_NAME = "gpt-4"
+
+# Initialize tokenizer
+enc = tiktoken.encoding_for_model(MODEL_NAME)
 
 def split_text_by_tokens(text, max_tokens=MAX_TOKENS):
     words = text.split()
@@ -27,8 +30,9 @@ def split_text_by_tokens(text, max_tokens=MAX_TOKENS):
 
     return chunks
 
-# Streamlit UI
-st.title("GPT-4o Max Token Text Splitter")
+# UI
+st.title("📚 ChatGPT Text Chunker (100K Token Chunks)")
+st.markdown("Split large text files into GPT-4o-ready chunks based on token count (100,000 tokens per chunk).")
 
 text_input = st.text_area("Paste your full text here", height=300)
 uploaded_file = st.file_uploader("Or upload a .txt file", type=["txt"])
@@ -37,10 +41,19 @@ if uploaded_file:
     text_input = uploaded_file.read().decode("utf-8")
 
 if text_input:
+    st.info("🔄 Splitting text...")
     chunks = split_text_by_tokens(text_input)
-    st.success(f"✅ Text split into {len(chunks)} chunk(s), each close to {MAX_TOKENS} tokens.")
+    
+    total_tokens = sum(t for _, t in chunks)
+    avg_tokens = total_tokens / len(chunks)
+    
+    st.success(f"✅ Split into {len(chunks)} chunk(s)")
+    st.markdown(f"**Total tokens:** {total_tokens:,}")
+    st.markdown(f"**Average tokens per chunk:** {int(avg_tokens):,}")
+    st.markdown("---")
 
     for i, (chunk, token_count) in enumerate(chunks):
         st.text_area(f"Chunk {i+1} — {token_count} tokens", value=chunk, height=250)
 
-    st.download_button("📥 Download All Chunks", "\n\n---\n\n".join(chunk for chunk, _ in chunks), file_name="chunks.txt")
+    full_text = "\n\n---\n\n".join(chunk for chunk, _ in chunks)
+    st.download_button("📥 Download All Chunks", full_text, file_name="gpt_chunks.txt")
