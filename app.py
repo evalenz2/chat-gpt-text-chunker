@@ -32,10 +32,12 @@ def split_text_by_tokens(text, max_tokens=MAX_TOKENS):
 
 # UI
 st.title("📚 ChatGPT Text Chunker (27K Token Chunks)")
-st.markdown("Split large text into ChatGPT-friendly chunks with a token limit of 27,000. Each chunk includes the instruction: `just answer ok:`")
+st.markdown("Split large text into ChatGPT-ready chunks with a 27,000-token limit. Each chunk includes the instruction `just answer ok:` and optionally adds source info.")
 
+# Inputs
 text_input = st.text_area("Paste your full text here", height=300)
 uploaded_file = st.file_uploader("Or upload a .txt file", type=["txt"])
+source_info = st.text_input("Optional: Add source information (e.g., document title or link)")
 
 if uploaded_file:
     text_input = uploaded_file.read().decode("utf-8")
@@ -55,9 +57,15 @@ if text_input:
     formatted_chunks = []
 
     for i, (chunk, token_count) in enumerate(chunks):
-        formatted = f"just answer ok:\n{chunk}"
-        formatted_chunks.append(formatted)
-        st.text_area(f"Chunk {i+1} — {token_count} tokens", value=formatted, height=250)
+        final_chunk = f"just answer ok:\n{chunk}"
+        if source_info.strip():
+            final_chunk += f"\n\nSource: {source_info.strip()}"
+        formatted_chunks.append(final_chunk)
 
+        st.markdown(f"**Chunk {i+1} — {token_count} tokens**")
+        st.code(final_chunk, language="markdown")
+        st.button(f"📋 Copy Chunk {i+1}", key=f"copy_{i}", help="Use Ctrl+C to copy from the box above")
+
+    # Download button for all chunks combined
     full_text = "\n\n---\n\n".join(formatted_chunks)
     st.download_button("📥 Download All Chunks", full_text, file_name="gpt_chunks.txt")
