@@ -1,2 +1,22 @@
-# chat-gpt-text-chunker
-A Streamlit app that splits long text into optimized chunks for GPT-4o input, preserving up to 127,000 tokens per chunk. Perfect for RAG pipelines, context injection, or prompt engineering workflows where minimal chunking and maximum context length are essential. Built with tiktoken for accurate token counting.
+# ChatGPT Text Chunker
+
+A simple Streamlit app to split long text into optimized chunks for ChatGPT, especially GPT-4o, supporting up to 127,000 tokens per chunk. Perfect for RAG pipelines, prompt engineering, or loading large context into multi-turn conversations.
+
+---
+
+## 🔍 Features
+
+- Paste text or upload `.txt` files
+- Splits using OpenAI's `tiktoken` tokenizer
+- Displays token count per chunk
+- Targets up to 127k tokens per chunk (GPT-4o compatible)
+- Download chunks as a single `.txt` file
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/your-username/chat-gpt-text-chunker.git
+cd chat-gpt-text-chunker
