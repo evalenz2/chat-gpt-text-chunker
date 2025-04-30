@@ -2,7 +2,7 @@ import streamlit as st
 import tiktoken
 
 # Settings
-MAX_TOKENS = 30000
+MAX_TOKENS = 27000
 MODEL_NAME = "gpt-4"
 
 # Initialize tokenizer
