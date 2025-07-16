@@ -1,56 +1,88 @@
 import streamlit as st
+import json
+from streamlit.components.v1 import html
 
-# Constants
-MAX_CHARS = 139000  # Max characters per chunk
+# ── Configuration ──────────────────────────────────────────────────────────────
+MAX_CHARS = 139_000            # characters per chunk
 
-def split_text_by_chars(text, max_chars=MAX_CHARS):
-    chunks = []
-    for i in range(0, len(text), max_chars):
-        chunk = text[i:i + max_chars]
-        chunks.append(chunk)
-    return chunks
+# ── Helpers ────────────────────────────────────────────────────────────────────
+def split_text_by_chars(text: str, max_chars: int = MAX_CHARS):
+    """Return a list of raw‑text chunks ≤ max_chars each."""
+    return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
-# UI
-st.title("📚 ChatGPT Text Chunker (139,000 Character Chunks)")
-st.markdown("Split large text into ChatGPT-ready chunks. Each chunk includes the instruction `just answer ok:` and optional source info.")
+def copy_button(label: str, text_to_copy: str, key: str):
+    """
+    Render an HTML button that copies text_to_copy to the clipboard.
+    Uses JS clipboard API; works in Streamlit ≥1.26.
+    """
+    escaped = json.dumps(text_to_copy)          # safe JS string literal
+    html(
+        f"""
+        <button onclick='navigator.clipboard.writeText({escaped})'
+                style="padding:6px 12px;margin:4px 0;border-radius:6px;
+                       border:1px solid #888;background:#eee;cursor:pointer;">
+            📋 {label}
+        </button>
+        """,
+        height=38,
+        key=key,
+    )
 
-# Input Fields
-text_input = ""
-text_input_area = st.text_area("Paste your full text here", height=300)
-uploaded_file = st.file_uploader("Or upload a .txt file", type=["txt"])
-source_info = st.text_input("Optional: Add source information (e.g., document title or link)")
+# ── UI ─────────────────────────────────────────────────────────────────────────
+st.title("📚 ChatGPT Text Chunker (139 000‑Character Blocks)")
+st.markdown(
+    "Paste text or upload a **.txt** file and I’ll split it into chunks no longer "
+    "than **139 000 characters**.  Each chunk is prefixed with `just answer ok:`."
+)
 
-# Load input
-if uploaded_file:
-    text_input = uploaded_file.read().decode("utf-8")
-else:
-    text_input = text_input_area
+# Input widgets
+textarea_content = st.text_area("Paste your full text here", height=300)
+uploaded_file = st.file_uploader("…or upload a .txt file", type=["txt"])
+source_info = st.text_input("Optional: source info (title, link, etc.)")
 
-# Process
+# Determine final input
+text_input = uploaded_file.read().decode() if uploaded_file else textarea_content
+
+# ── Processing ────────────────────────────────────────────────────────────────
 if text_input:
-    st.info("🔄 Splitting text by characters...")
-    chunks = split_text_by_chars(text_input)
+    st.info("🔄 Splitting text…")
+    raw_chunks = split_text_by_chars(text_input)
 
     total_chars = len(text_input)
-    avg_chars = total_chars / len(chunks)
-
-    st.success(f"✅ Split into {len(chunks)} chunk(s)")
+    st.success(f"✅ Split into **{len(raw_chunks)}** chunk(s)")
     st.markdown(f"**Total characters:** {total_chars:,}")
-    st.markdown(f"**Average characters per chunk:** {int(avg_chars):,}")
     st.markdown("---")
 
-    formatted_chunks = []
+    all_chunks_with_headers = []
 
-    for i, chunk in enumerate(chunks):
-        final_chunk = f"just answer ok:\n{chunk}"
+    for idx, raw_chunk in enumerate(raw_chunks, start=1):
+        final_chunk = f"just answer ok:\n{raw_chunk}"
         if source_info.strip():
             final_chunk += f"\n\nSource: {source_info.strip()}"
-        formatted_chunks.append(final_chunk)
 
-        st.markdown(f"**Chunk {i+1} — {len(chunk):,} characters**")
-        st.code(final_chunk[:1000] + ("..." if len(chunk) > 1000 else ""), language="markdown")
-        st.button(f"📋 Copy Chunk {i+1}", key=f"copy_{i}", help="Use Ctrl+C to copy from the box above")
+        all_chunks_with_headers.append(final_chunk)
 
-    # Download all chunks
-    full_text = "\n\n---\n\n".join(formatted_chunks)
-    st.download_button("📥 Download All Chunks", full_text, file_name="gpt_chunks.txt")
+        # Display & copy
+        st.markdown(f"### Chunk {idx} — {len(final_chunk):,} chars")
+        st.code(final_chunk, language="markdown")
+        copy_button(f"Copy Chunk {idx}", final_chunk, key=f"copy_{idx}")
+
+        # Optional per‑chunk download
+        st.download_button(
+            f"💾 Download Chunk {idx}",
+            final_chunk,
+            file_name=f"chunk_{idx}.txt",
+            mime="text/plain",
+            key=f"dl_{idx}",
+        )
+
+        st.markdown("---")
+
+    # Download all chunks in one file
+    combined = "\n\n---\n\n".join(all_chunks_with_headers)
+    st.download_button(
+        "📥 Download **all** chunks",
+        combined,
+        file_name="gpt_chunks.txt",
+        mime="text/plain",
+    )
