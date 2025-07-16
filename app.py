@@ -84,4 +84,21 @@ if text_input:
         with st.expander(f"Chunk {idx} — {tok_count} tokens", expanded=False):
             # Show only a preview of the chunk to keep the page light
             preview = final_chunk[:800] + ("…" if len(final_chunk) > 800 else "")
-            s
+            st.code(preview, language="markdown")
+            copy_button("Copy this chunk", final_chunk)
+            st.download_button(
+                "💾 Download this chunk",
+                final_chunk,
+                file_name=f"chunk_{idx}.txt",
+                mime="text/plain",
+                key=f"dl_{idx}",
+            )
+
+    # Combined download
+    combined_text = "\n\n---\n\n".join(all_chunks)
+    st.download_button(
+        "📥 Download all chunks",
+        combined_text,
+        file_name="gpt_chunks.txt",
+        mime="text/plain",
+    )
