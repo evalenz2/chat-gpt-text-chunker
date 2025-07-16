@@ -1,20 +1,42 @@
 import streamlit as st
 import json
-import streamlit.components.v1 as components   # renamed for clarity
+import streamlit.components.v1 as components
+import tiktoken
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-MAX_CHARS = 139_000
+MAX_TOKENS = 27_000           # tokens per chunk
+MODEL_NAME = "gpt-4"
+
+# Initialize tokenizer once
+enc = tiktoken.encoding_for_model(MODEL_NAME)
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-def split_text_by_chars(text: str, max_chars: int = MAX_CHARS):
-    return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
+def split_text_by_tokens(text: str, max_tokens: int = MAX_TOKENS):
+    """
+    Return a list of (chunk_str, token_count) tuples,
+    each with ≤ max_tokens GPT‑4 tokens.
+    """
+    words = text.split()
+    chunks, current_chunk, current_tokens = [], [], 0
+
+    for word in words:
+        tok_len = len(enc.encode(" " + word))
+        if current_tokens + tok_len > max_tokens:
+            chunk_text = " ".join(current_chunk)
+            chunks.append((chunk_text, current_tokens))
+            current_chunk, current_tokens = [word], tok_len
+        else:
+            current_chunk.append(word)
+            current_tokens += tok_len
+
+    if current_chunk:
+        chunks.append((" ".join(current_chunk), current_tokens))
+
+    return chunks
 
 def copy_button(label: str, text_to_copy: str):
-    """
-    Render a tiny HTML button that copies `text_to_copy` to the clipboard.
-    No 'key' param (avoids TypeError).
-    """
-    escaped = json.dumps(text_to_copy)  # safe JS string
+    """HTML/JS button that copies text_to_copy to the clipboard."""
+    escaped = json.dumps(text_to_copy)          # safe JS string
     components.html(
         f"""
         <button onclick='navigator.clipboard.writeText({escaped})'
@@ -27,52 +49,39 @@ def copy_button(label: str, text_to_copy: str):
     )
 
 # ── UI ─────────────────────────────────────────────────────────────────────────
-st.title("📚 ChatGPT Text Chunker (139 000‑Character Blocks)")
+st.title("📚 ChatGPT Text Chunker (27 000‑Token Blocks)")
 st.markdown(
-    "Split large text into chunks no longer than **139 000 characters**. "
-    "Each chunk is prefixed with `just answer ok:` &nbsp;and can be copied or downloaded."
+    "Paste text or upload a .txt file and I’ll split it into chunks of no more "
+    "than 27 000 GPT‑4 tokens.  Each chunk is prefixed with `just answer ok:`."
 )
 
+# Inputs
 textarea_content = st.text_area("Paste your full text here", height=300)
-uploaded_file  = st.file_uploader("…or upload a .txt file", type=["txt"])
-source_info    = st.text_input("Optional: source info (title, link, etc.)")
+uploaded_file    = st.file_uploader("…or upload a .txt file", type=["txt"])
+source_info      = st.text_input("Optional: source info (title, link, etc.)")
 
 text_input = uploaded_file.read().decode() if uploaded_file else textarea_content
 
 # ── Processing ────────────────────────────────────────────────────────────────
 if text_input:
-    raw_chunks = split_text_by_chars(text_input)
-    total_chars = len(text_input)
+    st.info("Splitting text into token‑sized chunks…")
+    token_chunks = split_text_by_tokens(text_input)
+    total_tokens = sum(tok for _, tok in token_chunks)
 
-    st.success(f"✅ Split into **{len(raw_chunks)}** chunk(s)")
-    st.markdown(f"**Total characters:** {total_chars:,}")
+    st.success(f"Split into {len(token_chunks)} chunk(s)")
+    st.markdown(f"Total tokens: {total_tokens:,}")
     st.markdown("---")
 
-    all_chunks_with_headers = []
+    all_chunks = []
 
-    for idx, raw_chunk in enumerate(raw_chunks, start=1):
-        final_chunk = f"just answer ok:\n{raw_chunk}"
+    for idx, (chunk_body, tok_count) in enumerate(token_chunks, start=1):
+        final_chunk = f"just answer ok:\n{chunk_body}"
         if source_info.strip():
             final_chunk += f"\n\nSource: {source_info.strip()}"
-        all_chunks_with_headers.append(final_chunk)
 
-        with st.expander(f"Chunk {idx} — {len(final_chunk):,} chars", expanded=False):
-            # Preview first 800 chars so the expander isn't overwhelming
-            st.code(final_chunk[:800] + ("…" if len(final_chunk) > 800 else ""), language="markdown")
-            copy_button("Copy this chunk", final_chunk)
-            st.download_button(
-                "💾 Download this chunk",
-                final_chunk,
-                file_name=f"chunk_{idx}.txt",
-                mime="text/plain",
-                key=f"dl_{idx}",
-            )
+        all_chunks.append(final_chunk)
 
-    # Combined download
-    combined = "\n\n---\n\n".join(all_chunks_with_headers)
-    st.download_button(
-        "📥 Download **all** chunks",
-        combined,
-        file_name="gpt_chunks.txt",
-        mime="text/plain",
-    )
+        with st.expander(f"Chunk {idx} — {tok_count} tokens", expanded=False):
+            # Show only a preview of the chunk to keep the page light
+            preview = final_chunk[:800] + ("…" if len(final_chunk) > 800 else "")
+            s
