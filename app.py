@@ -1,8 +1,8 @@
 import streamlit as st
 import tiktoken
 
-# Settings
-MAX_TOKENS = 27000
+# Adjusted Settings
+MAX_TOKENS = 8000
 MODEL_NAME = "gpt-4"
 
 # Initialize tokenizer
@@ -31,8 +31,8 @@ def split_text_by_tokens(text, max_tokens=MAX_TOKENS):
     return chunks
 
 # UI
-st.title("📚 ChatGPT Text Chunker (27K Token Chunks)")
-st.markdown("Split large text into ChatGPT-ready chunks with a 27,000-token limit. Each chunk includes the instruction `just answer ok:` and optionally adds source info.")
+st.title("📚 ChatGPT Text Chunker (8K Token Chunks)")
+st.markdown("Split large text into ChatGPT-ready chunks with an 8,000-token limit. Each chunk includes the instruction `just answer ok:` and optionally adds source info.")
 
 # Inputs
 text_input = st.text_area("Paste your full text here", height=300)
