@@ -3,13 +3,13 @@ import json
 import streamlit.components.v1 as components
 import tiktoken
 
-# ── Configuration ──────────────────────────────────────────────────────────────
-MAX_TOKENS = 2_300            # tokens per chunk
+# Configuration
+MAX_TOKENS = 23_000
 MODEL_NAME = "gpt-4"
 
 enc = tiktoken.encoding_for_model(MODEL_NAME)
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# Helpers
 def split_text_by_tokens(text: str, max_tokens: int = MAX_TOKENS):
     words = text.split()
     chunks, current_chunk, current_tokens = [], [], 0
@@ -41,11 +41,11 @@ def copy_button(label: str, text_to_copy: str):
         height=40,
     )
 
-# ── UI ─────────────────────────────────────────────────────────────────────────
-st.title("📚 ChatGPT Text Chunker (2 300‑Token Blocks)")
+# UI
+st.title("📚 ChatGPT Text Chunker (23 000‑Token Blocks)")
 st.markdown(
     "Paste text or upload a .txt file and I’ll split it into chunks of no more "
-    "than 2 300 GPT‑4 tokens. Each chunk is prefixed with `just answer ok:`."
+    "than 23 000 GPT‑4 tokens. Each chunk is prefixed with `just answer ok:`."
 )
 
 textarea_content = st.text_area("Paste your full text here", height=300)
@@ -54,10 +54,10 @@ source_info      = st.text_input("Optional: source info (title, link, etc.)")
 
 text_input = uploaded_file.read().decode() if uploaded_file else textarea_content
 
-# ── Processing ────────────────────────────────────────────────────────────────
+# Processing
 if text_input:
     token_chunks = split_text_by_tokens(text_input)
-    total_tokens = sum(tok for _, tok in token_chunks)
+    total_tokens = sum(t for _, t in token_chunks)
 
     st.success(f"Split into {len(token_chunks)} chunk(s)")
     st.markdown(f"Total tokens: {total_tokens:,}")
